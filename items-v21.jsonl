@@ -1,0 +1,1 @@
+{"id": "S2-04", "family": "S2", "k": 3, "prompt": "In the phrase 'Quiet Ember', replace every 'a' or 'A' with '4', every 'e' or 'E' with '3', every 'i' or 'I' with '1', every 'o' or 'O' with '0' (keep spaces), then uppercase the result. End your reply with a line: Answer: <answer>", "checker": "S2", "params": {"expected": "QU13T 3MB3R"}}
