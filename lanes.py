@@ -117,6 +117,37 @@ if os.path.exists(_LOCAL):
             }
     LANE_ORDER = list(LANES.keys())
 
+# Paid control lanes (P/Q/R): the cheapest smart models, for the
+# free-vs-paid comparison. Served via the Nous portal at pay-as-you-go rates
+# (est. total <$1 for a full two-bank run on all three). CommandCode carries
+# the same ids but its credit pool was empty at wiring time; the ids are
+# identical, so any OpenAI-compatible host works. These SPEND REAL MONEY:
+# `run.py --paid` includes them, never part of the default run.
+PAID_LANES = {
+    "P-mimopro-paid": {
+        "model": "xiaomi/mimo-v2.6-pro",
+        "url": "https://inference-api.nousresearch.com/v1/chat/completions",
+        "headers": lambda: {"Authorization": f"Bearer {nous_auth()}"},
+    },
+    "Q-deepseekflash-paid": {
+        "model": "deepseek/deepseek-v4.1-flash",
+        "url": "https://inference-api.nousresearch.com/v1/chat/completions",
+        "headers": lambda: {"Authorization": f"Bearer {nous_auth()}"},
+    },
+    "R-glmflash-paid": {
+        "model": "z-ai/glm-5.3-flash",
+        "url": "https://inference-api.nousresearch.com/v1/chat/completions",
+        "headers": lambda: {"Authorization": f"Bearer {nous_auth()}"},
+    },
+}
+
+
+def include_paid():
+    LANES.update(PAID_LANES)
+    for name in PAID_LANES:
+        if name not in LANE_ORDER:
+            LANE_ORDER.append(name)
+
 
 def call_lane(lane_name, payload, timeout=90):
     """POST one chat completion. Returns (status:int, body:dict|bytes, latency:float).

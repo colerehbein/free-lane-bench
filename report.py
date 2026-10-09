@@ -44,12 +44,11 @@ def pctl(xs, q):
 
 def load(results_dir):
     per_lane = {}
-    for ln in LANE_ORDER:
-        recs = []
-        for path in sorted(glob.glob(os.path.join(results_dir, f"{ln}*.jsonl"))):
-            with open(path) as f:
-                recs += [json.loads(l) for l in f]
-        per_lane[ln] = recs
+    for path in sorted(glob.glob(os.path.join(results_dir, "*.jsonl"))):
+        with open(path) as f:
+            for line in f:
+                r = json.loads(line)
+                per_lane.setdefault(r.get("lane", "?"), []).append(r)
     return per_lane
 
 
@@ -57,6 +56,8 @@ def main():
     results_dir = sys.argv[1] if len(sys.argv) > 1 else sorted(
         glob.glob(os.path.join(HERE, "results", "*")))[-1]
     per_lane = load(results_dir)
+    extras = sorted(set(per_lane) - set(LANE_ORDER))
+    LANE_ORDER.extend(extras)
     fams = sorted({r["family"] for recs in per_lane.values() for r in recs})
     FAMILIES.clear()
     FAMILIES.extend(fams)

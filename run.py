@@ -117,8 +117,12 @@ def main():
                     help="skip (lane,item_id,sample) already in --out")
     ap.add_argument("--lane", default=None,
                     help="run only this lane (e.g. a new challenger from lanes.local.json)")
+    ap.add_argument("--paid", action="store_true",
+                    help="include PAID_LANES (spends real credits, see lanes.py)")
     ap.add_argument("--concurrency-per-lane", type=int, default=2)
     args = ap.parse_args()
+    if args.paid:
+        lanes.include_paid()
 
     with open(os.path.join(HERE, args.items_file)) as f:
         items = [json.loads(l) for l in f]

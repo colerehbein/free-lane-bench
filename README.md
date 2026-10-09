@@ -171,7 +171,9 @@ checkers.py             programmatic graders (strict JSON, regex traps,
 selftest.py             grader validation — RUN THIS FIRST
 lanes.py                lane adapters (endpoints, auth headers, gotchas)
 run.py                  round-robin runner, incremental + resumable,
-                        --lane for single-lane challenger runs
+                        --lane for single-lane challenger runs,
+                        --paid to include the paid-control lanes (spends
+                        real money, see PAID_LANES in lanes.py)
 report.py               scorecard + pre-registered decision rule
 catalog_watch.py        catalog watcher + catalog-manifest.json baseline —
                         diffs the hosted catalogs so re-runs stay current
