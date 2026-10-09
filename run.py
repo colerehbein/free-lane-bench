@@ -115,6 +115,8 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--resume", action="store_true",
                     help="skip (lane,item_id,sample) already in --out")
+    ap.add_argument("--lane", default=None,
+                    help="run only this lane (e.g. a new challenger from lanes.local.json)")
     ap.add_argument("--concurrency-per-lane", type=int, default=2)
     args = ap.parse_args()
 
@@ -142,10 +144,13 @@ def main():
                         done_keys.add((r["lane"], r["item_id"], r["sample"]))
 
     calls = []
+    lane_names = [args.lane] if args.lane else lanes.LANE_ORDER
+    if args.lane and args.lane not in lanes.LANES:
+        sys.exit(f"unknown lane {args.lane!r}; known: {list(lanes.LANES)}")
     for i, it in enumerate(items):
         k = 1 if args.smoke else it["k"]
         for s in range(k):
-            for lane_name in lanes.LANE_ORDER:
+            for lane_name in lane_names:
                 if (lane_name, it["id"], s) in done_keys:
                     continue
                 calls.append((i, s, lane_name, it))

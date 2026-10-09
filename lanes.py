@@ -91,6 +91,32 @@ LANES = {
 
 LANE_ORDER = list(LANES.keys())
 
+# Ad-hoc lanes (new challengers) live in lanes.local.json — gitignored, never
+# committed. Shape: {"my-lane": {"model": "...", "url": "...",
+# "bearer_env": "MY_KEY", "headers": {"X-Extra": "value"}}}
+_LOCAL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lanes.local.json")
+
+
+def _local_headers(spec):
+    def h():
+        out = dict(spec.get("headers") or {})
+        env = spec.get("bearer_env")
+        if env:
+            out["Authorization"] = f"Bearer {os.environ[env]}"
+        return out
+    return h
+
+
+if os.path.exists(_LOCAL):
+    with open(_LOCAL) as _f:
+        for _name, _spec in json.load(_f).items():
+            LANES[_name] = {
+                "model": _spec["model"],
+                "url": _spec["url"],
+                "headers": _local_headers(_spec),
+            }
+    LANE_ORDER = list(LANES.keys())
+
 
 def call_lane(lane_name, payload, timeout=90):
     """POST one chat completion. Returns (status:int, body:dict|bytes, latency:float).

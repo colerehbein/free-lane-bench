@@ -170,8 +170,11 @@ checkers.py             programmatic graders (strict JSON, regex traps,
                         hidden-assert subprocess runner, S1 check interpreter)
 selftest.py             grader validation — RUN THIS FIRST
 lanes.py                lane adapters (endpoints, auth headers, gotchas)
-run.py                  round-robin runner, incremental + resumable
+run.py                  round-robin runner, incremental + resumable,
+                        --lane for single-lane challenger runs
 report.py               scorecard + pre-registered decision rule
+catalog_watch.py        catalog watcher + catalog-manifest.json baseline —
+                        diffs the hosted catalogs so re-runs stay current
 DESIGN.md               round 1 design (protocol, threats to validity)
 RESULTS.md              both rounds' results + failure-mode taxonomy
 ```
