@@ -13,6 +13,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import checkers  # noqa: E402
 import items_v2  # noqa: E402
+import items_v3  # noqa: E402
 
 FAILS = []
 
@@ -172,6 +173,87 @@ class LRUCache:
         expect(it, json.dumps(it["params"]["expected"]), True, "exact transform")
         mutated = list(reversed(it["params"]["expected"]))
         expect(it, json.dumps(mutated), False, "reversed fails")
+
+    # ---------------- S8 (answer format + generator sanity)
+    for i in range(6):
+        it = items_v3.gen_s8(i)
+        exp = str(it["params"]["expected"])
+        expect(it, f"work\nAnswer: {exp}", True, "expected answer")
+        expect(it, "work\nAnswer: zzz-not-it", False, "wrong answer")
+        if i < 2:
+            assert exp in "1234", f"S8-{i} slot out of range"
+        elif i < 4:
+            assert exp in ("alice", "bob", "carol"), f"S8-{i} person?"
+        else:
+            assert exp in ("yes", "no"), f"S8-{i} verdict?"
+
+    # ---------------- S9 (reference solutions pass, shipped bug fails)
+    refs9 = {
+        0: """def word_break(s, words):
+    ws = set(words)
+    ok = [False] * (len(s) + 1)
+    ok[0] = True
+    for i in range(1, len(s) + 1):
+        for j in range(i):
+            if ok[j] and s[j:i] in ws:
+                ok[i] = True
+                break
+    return ok[len(s)]""",
+        1: """def spiral_order(matrix):
+    out = []
+    while matrix:
+        out += matrix.pop(0)
+        matrix = [list(r) for r in list(zip(*matrix))[::-1]]
+    return out""",
+        2: """def balanced(s):
+    pairs = {')': '(', ']': '[', '}': '{'}
+    stack = []
+    for c in s:
+        if c in '([{':
+            stack.append(c)
+        elif c in pairs:
+            if not stack or stack.pop() != pairs[c]:
+                return False
+    return not stack""",
+        3: """def top_k(records, k):
+    return sorted(records, key=lambda r: (-r['score'], r['id']))[:k]""",
+        4: """def max_subarray(xs):
+    if not xs:
+        return 0
+    best = cur = xs[0]
+    for x in xs[1:]:
+        cur = max(x, cur + x)
+        best = max(best, cur)
+    return best""",
+    }
+    for i in range(5):
+        it = items_v3.gen_s9(i)
+        expect(it, f"```python\n{refs9[i]}\n```", True, "reference solution")
+    broken_kadane = ("def max_subarray(xs):\n    best = 0\n    cur = 0\n"
+                     "    for x in xs:\n        cur = max(0, cur + x)\n"
+                     "        best = max(best, cur)\n    return best")
+    expect(items_v3.gen_s9(4), broken_kadane, False, "shipped bug must fail asserts")
+
+    # ---------------- S10 (summary fidelity + hallucination detection)
+    it = items_v3.gen_s10(0)
+    f10 = it["params"]["facts"]
+    good10 = (f"The {f10['service']} incident lasted {f10['duration']} minutes. "
+              f"It affected {f10['users']} users in the region. Root cause has been addressed.")
+    expect(it, good10, True, "3-sentence compliant summary")
+    expect(it, good10 + " A fourth sentence here.", False, "4 sentences fail")
+    expect(it, good10.replace(str(f10["users"]), "999999"), False, "invented number fails")
+    expect(it, good10.replace(str(f10["duration"]), "x", 1), False, "missing required number")
+
+    # ---------------- S11 (tool-call discipline)
+    for i in range(5):
+        it = items_v3.gen_s11(i)
+        exp11 = it["params"]["expected"]
+        expect(it, json.dumps(exp11), True, "exact call")
+        expect(it, f"```json\n{json.dumps(exp11)}\n```", False, "fenced = fail")
+    it = items_v3.gen_s11(0)
+    expect(it, json.dumps({"tool": "send_email", "args": {"to": "x", "subject": "y"}}),
+           False, "wrong tool fails")
+    expect(it, json.dumps([it["params"]["expected"]]), False, "array vs object shape fails")
 
     print()
     if FAILS:

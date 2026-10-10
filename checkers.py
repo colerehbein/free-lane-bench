@@ -307,6 +307,85 @@ def check_s7(params, text):
     return False, f"got {str(obj)[:120]} != {str(params['expected'])[:120]}"
 
 
+# ---------------------------------------------------------- S8/S9/S10/S11
+def check_s8(params, text):
+    a = extract_answer(text)
+    if a is None:
+        return False, "no Answer: line"
+    got = a.replace(",", "").strip().lower()
+    exp = str(params["expected"]).strip().lower()
+    if got != exp:
+        return False, f"got {got!r} != {exp!r}"
+    return True, "ok"
+
+
+check_s9 = check_f3  # code-assert runner (params: {"asserts": [...]})
+check_s4 = check_f3  # same code-assert runner (params: {"asserts": [...]})
+
+_SENT_SPLIT = re.compile(r"[.!?]+")
+
+
+def check_s10(params, text):
+    text = text.strip()
+    sentences = [s for s in _SENT_SPLIT.split(text) if s.strip()]
+    if len(sentences) != 3:
+        return False, f"{len(sentences)} sentences != 3"
+    if len(re.findall(r"\S+", text)) > 80:
+        return False, "over 80 words"
+    facts = params["facts"]
+    src_digits = set(re.findall(r"\d+", f"{facts['duration']} {facts['users']}"))
+    got_digits = set(re.findall(r"\d+", text))
+    stray = got_digits - src_digits
+    if stray:
+        return False, f"invented number(s): {sorted(stray)}"
+    for need in (str(facts["duration"]), str(facts["users"])):
+        if need not in got_digits:
+            return False, f"missing required number {need}"
+    if facts["service"].lower() not in text.lower():
+        return False, f"service {facts['service']} not mentioned"
+    return True, "ok"
+
+
+def _deep_eq_tol(a, b):
+    if isinstance(a, bool) or isinstance(b, bool):
+        return a == b
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return abs(a - b) <= 0.011
+    return a == b
+
+
+def _call_eq(got, exp):
+    if not isinstance(got, dict):
+        return False
+    if exp["tool"] is None:
+        return got.get("tool") in (None, "null") and not got.get("args")
+    if got.get("tool") != exp["tool"]:
+        return False
+    args = got.get("args") or {}
+    if set(args) != set(exp["args"]):
+        return False
+    return all(_deep_eq_tol(args[k], exp["args"][k]) for k in args)
+
+
+def check_s11(params, text):
+    try:
+        obj = json.loads(text.strip())
+    except Exception as e:
+        return False, f"json_parse: {e}"
+    exp = params["expected"]
+    if isinstance(exp, list):
+        if not isinstance(obj, list) or len(obj) != len(exp):
+            return False, f"call count/shape: {str(obj)[:80]}"
+        if not all(_call_eq(g, e) for g, e in zip(obj, exp)):
+            return False, f"call mismatch: {str(obj)[:120]}"
+        return True, "ok"
+    if isinstance(obj, list):
+        return False, "expected single call object, got array"
+    if _call_eq(obj, exp):
+        return True, "ok"
+    return False, f"got {str(obj)[:120]}"
+
+
 CHECKERS = {
     "F1": check_f1,
     "F2": check_f2,
@@ -321,6 +400,10 @@ CHECKERS = {
     "S5": check_s5,
     "S6": check_s6,
     "S7": check_s7,
+    "S8": check_s8,
+    "S9": check_s9,
+    "S10": check_s10,
+    "S11": check_s11,
 }
 
 
